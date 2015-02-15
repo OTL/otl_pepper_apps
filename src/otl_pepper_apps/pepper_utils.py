@@ -1,7 +1,10 @@
 #!/usr/bin/env python
 
 import rospy
+import actionlib
 from naoqi_msgs.msg import JointAnglesWithSpeedActionGoal
+from naoqi_msgs.msg import SpeechWithFeedbackAction
+from naoqi_msgs.msg import SpeechWithFeedbackActionGoal
 from naoqi_msgs.srv import GetInstalledBehaviors
 
 from std_msgs.msg import String
@@ -15,10 +18,10 @@ class RosPepperProxy(object):
                    'HipRoll', 'HipPitch', 'KneePitch']
     def __init__(self):
         self._joint_publisher = rospy.Publisher('/joint_angles_action/goal',
-                                                JointAnglesWithSpeedActionGoal, queue_size=100)
-        self._speech_publisher = rospy.Publisher('/speech', String, queue_size=1)
-        self._base_move_pose_publisher = rospy.Publisher('/cmd_pose', Pose2D, queue_size=100)
-        self._base_move_twist_publisher = rospy.Publisher('/cmd_vel', Twist, queue_size=100)
+                                                JointAnglesWithSpeedActionGoal, queue_size=1)
+        self._speech_client = actionlib.SimpleActionClient('/speech_action', SpeechWithFeedbackAction)
+        self._base_move_pose_publisher = rospy.Publisher('/cmd_pose', Pose2D, queue_size=10)
+        self._base_move_twist_publisher = rospy.Publisher('/cmd_vel', Twist, queue_size=1)
 
     def move_joints(self, names, angles, speed=0.3):
         goal = JointAnglesWithSpeedActionGoal()
@@ -31,8 +34,13 @@ class RosPepperProxy(object):
                 return
         self._joint_publisher.publish(goal)
 
-    def speak(self, string):
-        self._speech_publisher.publish(String(data=string))
+    def speak(self, string, wait=False):
+        self._speech_client.wait_for_server()
+        goal = SpeechWithFeedbackActionGoal()
+        goal.goal.say = string
+        self._speech_client.send_goal(goal.goal)
+        if wait:
+            self._speech_client.wait_for_result()
 
     def get_behaviors(self):
         rospy.wait_for_service('/get_installed_behaviors')
