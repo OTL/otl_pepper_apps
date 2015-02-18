@@ -84,6 +84,23 @@ pepper_proxy = RosPepperProxy()
 pepper_proxy.speak('真似をします', True)
 m = MyoToArm(pepper_proxy)
 r = rospy.Rate(5.0)
+
+def touch_handler(place, is_on):
+    if is_on:
+        pepper_proxy.set_eye_leds(1, 0, 0)
+        pepper_proxy.speak('あなたはは今日も美しいです', True)
+        pepper_proxy.set_eye_leds(0, 0, 1)
+
+pepper_proxy.set_head_touch_handler(touch_handler)
+pepper_proxy.set_ear_leds(0)
+pepper_proxy.set_eye_leds(1, 0, 0)
+import time
+time.sleep(0.5)
+pepper_proxy.set_eye_leds(0, 1, 0)
+time.sleep(0.5)
+pepper_proxy.set_eye_leds(0, 0, 1)
+pepper_proxy.set_ear_leds(1)
+
 while not rospy.is_shutdown():
     r.sleep()
     m.send_angles()
